@@ -1,17 +1,16 @@
 {
-  "name": "app1",
+  "name": "cschat",
   "version": "1.0.0",
-  "description": "socket.io example",
+  "description": "Customer Service chat application",
   "main": "app.js",
   "scripts": {
     "test": "mocha"
   },
-  "author": "cesar casas",
+  "author": "David Martínez",
   "license": "ISC",
   "dependencies": {
     "eslint": "^4.19.1",
     "express": "^4.14.0",
-    "redis": "^2.8.0",
     "socket.io": "^1.4.8"
   },
   "devDependencies": {

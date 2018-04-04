@@ -1,46 +1,31 @@
 const express = require('express');
 const http = require('http');
-const redis = require('redis');
 
 const app = express();
 const server = http.Server(app);
 const io = require('socket.io')(server);
 
-const client = redis.createClient();
-const { promisify } = require('util');
-
-const getAsync = promisify(client.get).bind(client);
-
-client.flushdb();
-
-const names = []; // For mocking purposes.
+const color = (str, clr) => `<span style='color:${clr}'>${str}</span>`;
+const cache = {};
+const users = {};
+const adminInstances = {};
 
 app.use(express.static('./public'));
 
-app.get('/admin', (req, res) => {
-  client.keys('usr-*', (err, keys) => {
-    const arr = [];
-    if (keys.length > 0) {
-      keys.forEach(async (k, i) => {
-        const id = k.split('-')[1];
-        arr.push(`<li><a href="admin.html?id=${id}">${await getAsync(k)}</a></li>`);
-        if (i === keys.length - 1) res.send(`<ul>${arr.join('')}</ul>`);
-      });
-    } else {
-      res.send('There are no users connected');
-    }
-  });
-});
-
-const color = (str, clr) => `<span style='color:${clr}'>${str}</span>`;
-
 io.on('connect', (socket) => {
-  if (socket.handshake.query.id) {
-    client.set(`admin-${socket.handshake.query.id}`, socket.id);
+  if (socket.handshake.query.room) {
+    cache.lobby = socket.id;
+    Object.keys(users).forEach((id) => {
+      socket.emit('user', `<li id=${id}><a href="admin.html?id=${id}">${id}</a></li>`);
+    });
+  } else if (socket.handshake.query.id) {
+    adminInstances[socket.handshake.query.id] = socket.id;
     socket.broadcast.to(socket.handshake.query.id)
       .emit('message', color('An administrator has joined this session.', 'gray'));
   } else {
-    client.set(`usr-${socket.id}`, names.pop() || 'User');
+    users[socket.id] = 'User';
+    socket.broadcast.to(cache.lobby)
+      .emit('user', `<li id=${socket.id}><a href="admin.html?id=${socket.id}">${socket.id}</a></li>`);
   }
 
   socket.on('adminmsg', (msg) => {
@@ -49,10 +34,10 @@ io.on('connect', (socket) => {
     socket.broadcast.to(socket.handshake.query.id).emit('message', message);
   });
 
-  socket.on('message', async (msg) => {
-    if (await getAsync(`admin-${socket.id}`)) {
-      const a = await getAsync(`admin-${socket.id}`);
-      const message = `${await getAsync(`usr-${socket.id}`)}: ${msg}`;
+  socket.on('message', (msg) => {
+    if (adminInstances[socket.id]) {
+      const a = adminInstances[socket.id];
+      const message = `${users[socket.id]}: ${msg}`;
       socket.emit('message', message);
       socket.broadcast.to(a).emit('message', message);
     } else {
@@ -61,14 +46,16 @@ io.on('connect', (socket) => {
     }
   });
 
-  socket.on('disconnect', async () => {
+  socket.on('disconnect', () => {
     if (socket.handshake.query.id) {
-      client.del(`admin-${socket.handshake.query.id}`);
+      delete adminInstances[socket.handshake.query.id];
       socket.broadcast.to(socket.handshake.query.id)
         .emit('message', color('The administrator has disconnected from this session.', 'gray'));
     } else {
-      client.del(`usr-${socket.id}`);
-      socket.broadcast.to(await getAsync(`admin-${socket.id}`))
+      socket.broadcast.to(cache.lobby)
+        .emit('unplug', socket.id);
+      delete users[socket.id];
+      socket.broadcast.to(adminInstances[socket.id])
         .emit('message', color('The user has disconnected from this session.', 'gray'));
     }
   });
