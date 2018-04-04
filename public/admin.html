@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>Admin chat client</title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<header>
+  <ul id="connections"></ul>
+</header>
+
+<body>
+  <ul id="messages"></ul>
+  <form onsubmit="submit()">
+    <input id="m" autocomplete="off" />
+    <button>Send</button>
+  </form>
+  <script src="admin.js"></script>
+</body>
+
+</html>
