@@ -1,4 +1,5 @@
-/* eslint no-undef: off */
+/* eslint-env browser */
+/* global io */
 const socket = io();
 
 function submit() {

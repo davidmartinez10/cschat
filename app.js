@@ -36,7 +36,7 @@ const color = (str, clr) => `<span style='color:${clr}'>${str}</span>`;
 
 io.on('connect', (socket) => {
   if (!socket.handshake.query.id) {
-    client.set(`usr-${socket.id}`, names.pop() || 'asd');
+    client.set(`usr-${socket.id}`, names.pop() || 'User');
   } else {
     client.set(`admin-${socket.handshake.query.id}`, socket.id);
   }

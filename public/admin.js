@@ -1,4 +1,5 @@
-/* eslint no-undef: off */
+/* eslint-env browser */
+/* global io */
 function query(b) {
   return b.split('?')[1].split('=')[1];
 }
