@@ -8,11 +8,6 @@ body {
   font: 13px Helvetica, Arial;
 }
 
-header {
-  border: #000;
-  border-style: solid;
-}
-
 form {
   background: #000;
   padding: 3px;

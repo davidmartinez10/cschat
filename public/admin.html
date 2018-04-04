@@ -6,15 +6,12 @@
   <link rel="stylesheet" type="text/css" href="style.css">
   <script src="/socket.io/socket.io.js"></script>
 </head>
-<header>
-  <ul id="connections"></ul>
-</header>
 
 <body>
   <ul id="messages"></ul>
-  <form onsubmit="submit()">
+  <form>
     <input id="m" autocomplete="off" />
-    <button>Send</button>
+    <button id="b">Send</button>
   </form>
   <script src="admin.js"></script>
 </body>

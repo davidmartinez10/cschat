@@ -35,10 +35,12 @@ app.get('/admin', (req, res) => {
 const color = (str, clr) => `<span style='color:${clr}'>${str}</span>`;
 
 io.on('connect', (socket) => {
-  if (!socket.handshake.query.id) {
-    client.set(`usr-${socket.id}`, names.pop() || 'User');
-  } else {
+  if (socket.handshake.query.id) {
     client.set(`admin-${socket.handshake.query.id}`, socket.id);
+    socket.broadcast.to(socket.handshake.query.id)
+      .emit('message', color('An administrator has joined this session.', 'gray'));
+  } else {
+    client.set(`usr-${socket.id}`, names.pop() || 'User');
   }
 
   socket.on('adminmsg', (msg) => {
@@ -48,17 +50,26 @@ io.on('connect', (socket) => {
   });
 
   socket.on('message', async (msg) => {
-    const a = await getAsync(`admin-${socket.id}`);
-    const message = `${await getAsync(`usr-${socket.id}`)}: ${msg}`;
-    socket.emit('message', message);
-    socket.broadcast.to(a).emit('message', message);
+    if (await getAsync(`admin-${socket.id}`)) {
+      const a = await getAsync(`admin-${socket.id}`);
+      const message = `${await getAsync(`usr-${socket.id}`)}: ${msg}`;
+      socket.emit('message', message);
+      socket.broadcast.to(a).emit('message', message);
+    } else {
+      socket.emit('message', `${color(msg, 'gray')}<br>
+        ${color('This message hasn\'t been sent because the administrator is offline', 'red')}`);
+    }
   });
 
-  socket.on('disconnect', () => {
-    if (!socket.handshake.query.id) {
-      client.del(`usr-${socket.id}`);
-    } else {
+  socket.on('disconnect', async () => {
+    if (socket.handshake.query.id) {
       client.del(`admin-${socket.handshake.query.id}`);
+      socket.broadcast.to(socket.handshake.query.id)
+        .emit('message', color('The administrator has disconnected from this session.', 'gray'));
+    } else {
+      client.del(`usr-${socket.id}`);
+      socket.broadcast.to(await getAsync(`admin-${socket.id}`))
+        .emit('message', color('The user has disconnected from this session.', 'gray'));
     }
   });
 });
